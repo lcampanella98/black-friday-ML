@@ -15,6 +15,7 @@ from sklearn.model_selection import cross_val_score, train_test_split
 from sklearn.metrics import mean_squared_error
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import MinMaxScaler
+import time
 
 df = pd.read_csv('black-friday/BlackFriday.csv')
 
@@ -40,12 +41,16 @@ def plot_counts(col, labels=None):
     plt.title(col + ' counts')
     plt.show()
 
-# plot_counts('Gender')
-# plot_counts('Age')
+def graph_demographics():
+    plot_counts('Gender')
+    plot_counts('Age')
+    plot_counts('Stay_In_Current_City_Years')
+    plot_counts('Marital_Status', ['Single', 'Married'])
 
 
 #  2. OUTLIER DETECTION
 outliers = []
+
 
 def detect_outlier(data_1):
     threshold = 2.935  # minimum standard deviations away from mean for outliers
@@ -98,100 +103,142 @@ user_or_product_columns = ['User_ID', 'Product_ID', 'Product_Category_1', 'Produ
 X_cols_case1 = list(filter(lambda c: c != y_col, list(df_enc)))
 X_cols_case2 = list(filter(lambda c: c != y_col and c not in user_or_product_columns and not c.startswith('Product_Category'), list(df_enc)))
 
-train_models = False
+
+def plot_model_error(title, labels, errs):
+    plt.bar(labels, errs)
+    plt.ylim(0, 5000)
+    plt.title(title)
+    plt.show()
+
+
+# returns tuple of rmse, running time
+def train_model(model, data, X_cols, y_col, train_size, should_print=True):
+    X = data[X_cols]
+    y = data[y_col]
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=1-train_size)
+
+    start = time.time()
+    model.fit(X_train, y_train)
+    end = time.time()
+
+    y_pred = model.predict(X_test)
+    rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+    if should_print:
+        print('-' * 50)
+        print('\t\t{}:'.format(type(model).__name__))
+
+        print('\t\tRMSE = {}'.format(rmse))
+        print('\t\tRunning time = {} sec'.format(end-start))
+        print('-' * 50)
+    return rmse, end-start
+
+
 #  4. TRAIN MODELS
-if train_models:
+def train_models():
+    model_labels = ['Linear Regression', 'Regression Tree']
+
     #  Case 1: With user and product specific attributes
-    print(('*'*30)+' WITH USER & PRODUCT SPECIFIC INFO '+('*'*30))
+    desc = "WITH USER & PRODUCT SPECIFIC INFO"
+    print(('*' * 30) + ' {} '.format(desc) + ('*' * 30))
 
-    X = df_enc[X_cols_case1]
-    y = df_enc[y_col]
+    case1_rmse = []
+    rmse, runtime = train_model(LinearRegression(), df_enc, X_cols_case1, y_col, 0.7)
+    case1_rmse.append(rmse)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
-
-    #  Model 1: Linear Regression
-    lin_reg = LinearRegression()
-    lin_reg.fit(X_train, y_train)
-    y_pred = lin_reg.predict(X_test)
-    print('-'*50)
-    print('\t\tLinear Regression:')
-    print('\t\tRMSE = {}'.format(np.sqrt(mean_squared_error(y_test, y_pred))))
-    print('-'*50)
     #scores = cross_val_score(lin_reg, X, y, cv=10)
     #print(scores)
-    print()
 
     #  Model 2: Regression Tree
-    tree = DecisionTreeRegressor(max_depth=10)
-    tree.fit(X_train, y_train)
-    y_pred = tree.predict(X_test)
-    #scores = cross_val_score(tree, X, y, cv=10)
-    #print(scores)
-    print('-'*50)
-    print('\t\tRegression Tree:')
-    print('\t\tRMSE = {}'.format(np.sqrt(mean_squared_error(y_test, y_pred))))
-    print('-'*50)
+    rmse, runtime = train_model(DecisionTreeRegressor(max_depth=10), df_enc, X_cols_case1, y_col, 0.7)
+    case1_rmse.append(rmse)
+    plot_model_error('RMSE error WITH user/product specific info', model_labels, case1_rmse)
 
     #  Case 2: WITHOUT user and product specific attributes
     print()
-    print(('*'*30)+' WITHOUT USER & PRODUCT SPECIFIC INFO '+('*'*30))
+    desc = "WITH USER & PRODUCT SPECIFIC INFO"
+    print(('*' * 30) + ' {} '.format(desc) + ('*' * 30))
 
-    #print('X cols: {}'.format(X_cols))
-    X = df_enc[X_cols_case2]
-    y = df_enc[y_col]
+    case2_rmse = []
+    rmse, runtime = train_model(LinearRegression(), df_enc, X_cols_case2, y_col, 0.7)
+    case2_rmse.append(rmse)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
-
-
-    #  Model 1: Linear Regression
-    lin_reg = LinearRegression()
-    lin_reg.fit(X_train, y_train)
-    y_pred = lin_reg.predict(X_test)
-    print('-'*50)
-    print('\t\tLinear Regression:')
-    print('\t\tRMSE = {}'.format(np.sqrt(mean_squared_error(y_test, y_pred))))
-    print('-'*50)
-    #scores = cross_val_score(lin_reg, X, y, cv=10)
-    #print(scores)
-    print()
+    # scores = cross_val_score(lin_reg, X, y, cv=10)
+    # print(scores)
 
     #  Model 2: Regression Tree
-    tree = DecisionTreeRegressor(max_depth=10)
-    tree.fit(X_train, y_train)
-    y_pred = tree.predict(X_test)
-    #scores = cross_val_score(tree, X, y, cv=10)
-    #print(scores)
-    print('-'*50)
-    print('\t\tRegression Tree:')
-    print('\t\tRMSE = {}'.format(np.sqrt(mean_squared_error(y_test, y_pred))))
-    print('-'*50)
+    rmse, runtime = train_model(DecisionTreeRegressor(max_depth=10), df_enc, X_cols_case2, y_col, 0.7)
+    case2_rmse.append(rmse)
+    plot_model_error('RMSE error WITHOUT user/product specific info', model_labels, case2_rmse)
 
-#  CLUSTERING
-kmeans = KMeans()
-cluster_cols = X_cols_case2 + [y_col]
-X = df_enc[cluster_cols]
 
-#  scale continuous columns to between 0 and 1 to give equal weight to all columns
-mms = MinMaxScaler()
-mms.fit(X)
-X = mms.transform(X)
+#  train_models()
 
-#  Determine Optimal k
-sum_squared_dist = []
-K = range(1,25)
-for k in K:
-    print('k:', k)
-    km = KMeans(n_clusters=k)
-    km = km.fit(X)
-    sum_squared_dist.append(km.inertia_)
+def run_scalability_analysis(plot=True):
+    x_cols = X_cols_case1
+    train_size_range = np.linspace(0.1, 1.0, endpoint=False, num=9)
 
-plt.plot(K, sum_squared_dist, 'bx-')
-plt.xlabel('k')
-plt.ylabel('Sum of Squared Distances')
-plt.title('Elbow Method For Optimal k - Case 2')
-plt.show()
+    model = LinearRegression()
+    linreg_runtimes = [
+        train_model(model, df_enc, x_cols, y_col, train_size, should_print=False)[1]
+        for train_size
+        in train_size_range
+    ]
 
-#  Just run kmeans with optimal k
-# best_k = 18
-# km = KMeans(n_clusters=best_k)
-# km = km.fit(X)
+    model = DecisionTreeRegressor(max_depth=10)
+    tree_runtimes = [
+        train_model(model, df_enc, x_cols, y_col, train_size, should_print=False)[1]
+        for train_size
+        in train_size_range
+    ]
+    if plot:
+        plt.scatter(train_size_range, linreg_runtimes, c='blue')
+        plt.scatter(train_size_range, tree_runtimes, c='orange')
+        plt.plot(train_size_range, linreg_runtimes, c='blue')
+        plt.plot(train_size_range, tree_runtimes, c='orange')
+        plt.legend(('Linear Regression', 'Decision Tree Regression'))
+        plt.show()
+
+    return train_size_range, {
+        'linreg': linreg_runtimes,
+        'tree': tree_runtimes
+    }
+
+
+run_scalability_analysis()
+
+
+def run_kmeans():
+
+    #  CLUSTERING
+    kmeans = KMeans()
+    cluster_cols = X_cols_case2 + [y_col]
+    X = df_enc[cluster_cols]
+
+    #  scale continuous columns to between 0 and 1 to give equal weight to all columns
+    mms = MinMaxScaler()
+    mms.fit(X)
+    X = mms.transform(X)
+
+    #  Determine Optimal k
+    sum_squared_dist = []
+    K = range(1, 5)
+    for k in K:
+        print('k:', k)
+        km = KMeans(n_clusters=k)
+        km = km.fit(X)
+        sum_squared_dist.append(km.inertia_)
+
+    plt.plot(K, sum_squared_dist, 'bx-')
+    plt.xlabel('k')
+    plt.ylabel('Sum of Squared Distances')
+    plt.title('Elbow Method For Optimal k - Case 2')
+    plt.show()
+
+    #  Just run kmeans with optimal k
+    # best_k = 18
+    # km = KMeans(n_clusters=best_k)
+    # km = km.fit(X)
+
+
+# run_kmeans()
