@@ -49,6 +49,8 @@ def graph_demographics():
     plot_counts('Marital_Status', ['Single', 'Married'])
 
 
+#  graph_demographics()
+
 #  2. OUTLIER DETECTION
 outliers = []
 
