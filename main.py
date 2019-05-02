@@ -22,7 +22,7 @@ df = pd.read_csv('black-friday/BlackFriday.csv')
 
 y_col = 'Purchase'
 
-# 1. DATA PREPARATION
+# 1. DATA PREPARATION & MISSING VALUES
 #  check which columns have null/NaN values
 #  print(df.isna().any())
 
@@ -40,6 +40,7 @@ def plot_counts(col, labels=None):
     plt.bar(labels if labels else cts.index, cts.array)
     plt.title(col + ' counts')
     plt.show()
+
 
 def graph_demographics():
     plot_counts('Gender')
@@ -63,8 +64,9 @@ def detect_outlier(data_1):
             outliers.append(y)
     return outliers
 
-#detect_outlier(df['Purchase'].array)
-#print('Found {} outliers: {}'.format(len(outliers), outliers))
+
+#  detect_outlier(df['Purchase'].array)
+#  print('Found {} outliers: {}'.format(len(outliers), outliers))
 
 #  3. FEATURE ENGINEERING
 
@@ -111,7 +113,7 @@ def plot_model_error(title, labels, errs):
     plt.show()
 
 
-# returns tuple of rmse, running time
+# returns tuple of (rmse, running time)
 def train_model(model, data, X_cols, y_col, train_size, should_print=True):
     X = data[X_cols]
     y = data[y_col]
@@ -146,9 +148,6 @@ def train_models():
     rmse, runtime = train_model(LinearRegression(), df_enc, X_cols_case1, y_col, 0.7)
     case1_rmse.append(rmse)
 
-    #scores = cross_val_score(lin_reg, X, y, cv=10)
-    #print(scores)
-
     #  Model 2: Regression Tree
     rmse, runtime = train_model(DecisionTreeRegressor(max_depth=10), df_enc, X_cols_case1, y_col, 0.7)
     case1_rmse.append(rmse)
@@ -162,9 +161,6 @@ def train_models():
     case2_rmse = []
     rmse, runtime = train_model(LinearRegression(), df_enc, X_cols_case2, y_col, 0.7)
     case2_rmse.append(rmse)
-
-    # scores = cross_val_score(lin_reg, X, y, cv=10)
-    # print(scores)
 
     #  Model 2: Regression Tree
     rmse, runtime = train_model(DecisionTreeRegressor(max_depth=10), df_enc, X_cols_case2, y_col, 0.7)
@@ -192,6 +188,7 @@ def run_scalability_analysis(plot=True):
         in train_size_range
     ]
     if plot:
+        plt.title('Scalability Analysis (Running time (secs) by train set size)')
         plt.scatter(train_size_range, linreg_runtimes, c='blue')
         plt.scatter(train_size_range, tree_runtimes, c='orange')
         plt.plot(train_size_range, linreg_runtimes, c='blue')
@@ -205,13 +202,42 @@ def run_scalability_analysis(plot=True):
     }
 
 
-run_scalability_analysis()
+#  run_scalability_analysis()
+
+
+def run_robustness_analysis(plot=True):
+    X = df_enc[X_cols_case1]
+    y = df_enc[y_col]
+
+    lin_reg = LinearRegression()
+    tree_reg = DecisionTreeRegressor(max_depth=10)
+
+    krange = range(2, 12)
+    lin_err = []
+    tree_err = []
+
+    for k in krange:
+        scores = cross_val_score(lin_reg, X, y, cv=k)
+        lin_err.append(np.mean(scores))
+        scores = cross_val_score(tree_reg, X, y, cv=k)
+        tree_err.append(np.mean(scores))
+
+    if plot:
+        plt.title('Robustness Analysis')
+        plt.scatter(krange, lin_err, c='blue')
+        plt.scatter(krange, tree_err, c='orange')
+        plt.plot(krange, lin_err, c='blue')
+        plt.plot(krange, tree_err, c='orange')
+        plt.legend(('Linear Regression', 'Decision Tree Regression'))
+        plt.show()
+
+
+#  run_robustness_analysis()
 
 
 def run_kmeans():
 
     #  CLUSTERING
-    kmeans = KMeans()
     cluster_cols = X_cols_case2 + [y_col]
     X = df_enc[cluster_cols]
 
@@ -222,7 +248,9 @@ def run_kmeans():
 
     #  Determine Optimal k
     sum_squared_dist = []
-    K = range(1, 5)
+    min_k, max_k = 1, 24
+    K = range(min_k, max_k+1)
+    print('Running k-means for k in range ({}, {})'.format(min_k, max_k))
     for k in K:
         print('k:', k)
         km = KMeans(n_clusters=k)
@@ -232,7 +260,7 @@ def run_kmeans():
     plt.plot(K, sum_squared_dist, 'bx-')
     plt.xlabel('k')
     plt.ylabel('Sum of Squared Distances')
-    plt.title('Elbow Method For Optimal k - Case 2')
+    plt.title('Elbow Method For Optimal k')
     plt.show()
 
     #  Just run kmeans with optimal k
@@ -241,4 +269,4 @@ def run_kmeans():
     # km = km.fit(X)
 
 
-# run_kmeans()
+#  run_kmeans()
