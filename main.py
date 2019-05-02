@@ -17,7 +17,7 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import MinMaxScaler
 import time
 
-df = pd.read_csv('black-friday/BlackFriday.csv')
+df = pd.read_csv('BlackFriday.csv')
 
 
 y_col = 'Purchase'
@@ -53,7 +53,7 @@ def graph_demographics():
 
 #  2. OUTLIER DETECTION
 
-def detect_outlier(data_1):
+def detect_outliers(data_1):
     outliers = []
     threshold = 2.935  # minimum standard deviations away from mean for outliers
     mean_1 = np.mean(data_1)
@@ -66,7 +66,7 @@ def detect_outlier(data_1):
     print('Found {} outliers: {}'.format(len(outliers), outliers))
     return outliers
 
-#  detect_outlier(df['Purchase'].array)
+#  detect_outliers(df['Purchase'].array)
 
 
 #  3. FEATURE ENGINEERING
