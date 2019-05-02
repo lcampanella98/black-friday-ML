@@ -52,10 +52,9 @@ def graph_demographics():
 #  graph_demographics()
 
 #  2. OUTLIER DETECTION
-outliers = []
-
 
 def detect_outlier(data_1):
+    outliers = []
     threshold = 2.935  # minimum standard deviations away from mean for outliers
     mean_1 = np.mean(data_1)
     std_1 = np.std(data_1)
@@ -64,11 +63,11 @@ def detect_outlier(data_1):
         z_score = (y - mean_1) / std_1
         if np.abs(z_score) > threshold:
             outliers.append(y)
+    print('Found {} outliers: {}'.format(len(outliers), outliers))
     return outliers
 
-
 #  detect_outlier(df['Purchase'].array)
-#  print('Found {} outliers: {}'.format(len(outliers), outliers))
+
 
 #  3. FEATURE ENGINEERING
 
